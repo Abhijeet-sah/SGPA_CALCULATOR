@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GradeForge — GPA Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Bricolage+Grotesque:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+      --bg:      #08080f;
+      --bg2:     #0f0f1a;
+      --bg3:     #14142a;
+      --card:    #111120;
+      --border:  rgba(99,102,241,0.2);
+      --accent:  #6366f1;
+      --accent2: #22d3ee;
+      --green:   #22c55e;
+      --yellow:  #eab308;
+      --red:     #ef4444;
+      --orange:  #f97316;
+      --text:    #f0f0fa;
+      --muted:   #6b6b8a;
+      --glow:    0 0 30px rgba(99,102,241,0.3);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: .6;
+    }
+
+    .orb { position: fixed; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0; }
+    .orb1 { width: 500px; height: 500px; background: rgba(99,102,241,0.08); top: -150px; right: -100px; }
+    .orb2 { width: 400px; height: 400px; background: rgba(34,211,238,0.05); bottom: -100px; left: -80px; }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,8,15,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 0;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800; font-size: 1.3rem; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo-sub { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; -webkit-text-fill-color: var(--muted); }
+
+    .hero-strip { padding: 3.5rem 0 2.5rem; position: relative; z-index: 1; }
+    .hero-strip h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; margin-bottom: 0.6rem;
+    }
+    .hero-strip h1 em { font-style: normal; color: var(--accent); }
+    .hero-strip p { color: var(--muted); font-size: 1rem; max-width: 480px; }
+
+    .gpa-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 24px; padding: 2.2rem; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .gpa-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at top, rgba(99,102,241,0.08), transparent 70%);
+      pointer-events: none;
+    }
+    .gpa-label { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+    .gpa-value {
+      font-family: 'Syne', sans-serif; font-size: 5rem; font-weight: 800;
+      line-height: 1; letter-spacing: -0.05em;
+      background: linear-gradient(135deg, #fff 30%, var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      transition: all 0.4s ease;
+    }
+    .gpa-grade {
+      display: inline-block; font-family: 'Syne', sans-serif;
+      font-size: 1.1rem; font-weight: 800; padding: 0.25rem 1.2rem;
+      border-radius: 100px; margin-top: 0.6rem; transition: all 0.3s;
+    }
+    .grade-A  { background: rgba(34,197,94,0.15);   color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+    .grade-B  { background: rgba(99,102,241,0.15);  color: #6366f1; border: 1px solid rgba(99,102,241,0.3); }
+    .grade-C  { background: rgba(234,179,8,0.15);   color: #eab308; border: 1px solid rgba(234,179,8,0.3); }
+    .grade-D  { background: rgba(249,115,22,0.15);  color: #f97316; border: 1px solid rgba(249,115,22,0.3); }
+    .grade-F  { background: rgba(239,68,68,0.15);   color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .grade-NA { background: rgba(107,107,138,0.15); color: var(--muted); border: 1px solid var(--border); }
+
+    .arc-wrap { position: relative; width: 160px; height: 90px; margin: 0 auto 1rem; }
+    .arc-wrap svg { width: 160px; height: 90px; }
+    .arc-bg   { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 10; stroke-linecap: round; }
+    .arc-fill { fill: none; stroke: url(#arcGrad);          stroke-width: 10; stroke-linecap: round; transition: stroke-dasharray 0.6s cubic-bezier(0.4,0,0.2,1); }
+
+    .stats-row { margin-top: 1.2rem; display: flex; gap: 0.6rem; }
+    .stat-pill { flex: 1; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 0.7rem 0.5rem; text-align: center; }
+    .stat-pill .num { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; color: var(--accent2); }
+    .stat-pill .lbl { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .main-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; overflow: hidden; position: relative; z-index: 1; }
+    .card-header-custom {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.4rem 1.8rem; border-bottom: 1px solid var(--border);
+      background: rgba(99,102,241,0.04);
+    }
+    .card-header-custom h5 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin: 0; }
+
+    .sem-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; padding: 1rem 1.8rem 0; }
+    .sem-tab {
+      font-size: 0.78rem; font-weight: 500; padding: 0.35rem 0.9rem; border-radius: 8px;
+      border: 1px solid var(--border); background: transparent; color: var(--muted);
+      cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+    }
+    .sem-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .sem-tab:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+    .subject-table { padding: 1rem 1.8rem 1.8rem; }
+    .col-labels {
+      display: grid; grid-template-columns: 1fr 100px 120px 90px 40px;
+      gap: 0.6rem; padding: 0 0 0.5rem;
+      font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .subject-row {
+      display: grid; grid-template-columns: 1fr 100px 120px 90px 40px;
+      gap: 0.6rem; align-items: center; margin-bottom: 0.6rem;
+      animation: slideIn 0.3s ease both;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+
+    .inp {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.88rem;
+      padding: 0.6rem 0.8rem; width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+    }
+    .inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    .inp::placeholder { color: var(--muted); }
+    select.inp option { background: var(--bg3); }
+
+    .grade-badge-sm {
+      display: inline-block; text-align: center; font-size: 0.75rem; font-weight: 700;
+      padding: 0.3rem 0; border-radius: 8px; width: 100%;
+      font-family: 'Syne', sans-serif; transition: all 0.3s;
+    }
+    .btn-del {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+      color: #ef4444; cursor: pointer; font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+    }
+    .btn-del:hover { background: rgba(239,68,68,0.25); }
+
+    .btn-add-row {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: rgba(99,102,241,0.08); border: 1px dashed rgba(99,102,241,0.35);
+      border-radius: 10px; padding: 0.6rem 1rem; color: var(--accent);
+      font-size: 0.85rem; font-weight: 500; cursor: pointer; width: 100%; margin-top: 0.4rem;
+      transition: background 0.2s; font-family: 'DM Sans', sans-serif;
+    }
+    .btn-add-row:hover { background: rgba(99,102,241,0.16); }
+
+    .actions-row { display: flex; gap: 0.8rem; flex-wrap: wrap; padding: 0 1.8rem 1.8rem; }
+    .btn-primary-custom {
+      background: var(--accent); color: #fff; border: none; border-radius: 10px;
+      padding: 0.7rem 1.6rem; font-family: 'Syne', sans-serif; font-weight: 700;
+      font-size: 0.88rem; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .btn-primary-custom:hover { box-shadow: var(--glow); transform: translateY(-1px); }
+    .btn-secondary-custom {
+      background: transparent; color: var(--muted); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.7rem 1.4rem;
+      font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 0.88rem;
+      cursor: pointer; transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-secondary-custom:hover { border-color: var(--accent); color: var(--text); }
+
+    .history-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; overflow: hidden; position: relative; z-index: 1; }
+    .history-list { padding: 0.5rem 1.8rem 1.8rem; }
+    .history-item { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .history-item:last-child { border-bottom: none; }
+    .history-sem { font-size: 0.85rem; font-weight: 500; }
+    .history-gpa { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; color: var(--accent); }
+    .history-credits { font-size: 0.75rem; color: var(--muted); }
+    .history-bar-wrap { width: 80px; height: 6px; background: var(--bg3); border-radius: 3px; }
+    .history-bar { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.5s ease; }
+
+    .scale-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; overflow: hidden; position: relative; z-index: 1; }
+    .scale-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.5rem; padding: 1rem 1.8rem 1.8rem; }
+    .scale-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.8rem; text-align: center; }
+    .scale-letter { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; }
+    .scale-range { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+    .scale-points { font-size: 0.75rem; font-weight: 600; margin-top: 0.15rem; }
+
+    #toast {
+      position: fixed; bottom: 2rem; right: 2rem;
+      background: var(--accent); color: #fff; padding: 0.7rem 1.4rem;
+      border-radius: 10px; font-size: 0.88rem; font-weight: 600;
+      opacity: 0; pointer-events: none; transform: translateY(10px);
+      transition: opacity 0.3s, transform 0.3s; z-index: 9000;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    .cgpa-banner {
+      background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(34,211,238,0.06));
+      border: 1px solid var(--border); border-radius: 16px; padding: 1.2rem 1.6rem;
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative; z-index: 1;
+    }
+    .cgpa-banner .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    .cgpa-banner .val { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent2); }
+
+    @media (max-width: 600px) {
+      .col-labels, .subject-row { grid-template-columns: 1fr 80px 100px 70px 36px; gap: 0.4rem; }
+      .sem-tabs { padding: 1rem 1rem 0; }
+      .subject-table, .actions-row { padding-left: 1rem; padding-right: 1rem; }
+      .card-header-custom { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="container">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <div class="logo">GradeForge</div>
+        <div class="logo-sub">GPA / CGPA Calculator</div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn-secondary-custom" onclick="resetAll()"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</button>
+        <button class="btn-primary-custom" onclick="exportSummary()"><i class="bi bi-download me-1"></i>Export</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4" style="position:relative;z-index:1;">
+
+  <!-- HERO -->
+  <div class="hero-strip">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-6">
+        <h1>Calculate your <em>GPA</em><br>with precision.</h1>
+        <p>Add subjects, credits & grades. GradeForge computes your semester GPA and cumulative CGPA instantly.</p>
+      </div>
+      <div class="col-lg-6">
+        <div class="cgpa-banner">
+          <div>
+            <div class="label">Cumulative GPA (CGPA)</div>
+            <div class="val" id="cgpaVal">—</div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;" id="cgpaCredits">Add subjects to calculate</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="label">Semesters</div>
+            <div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--accent);" id="semCount">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- LEFT -->
+    <div class="col-lg-8">
+      <div class="main-card mb-4">
+        <div class="card-header-custom">
+          <h5><i class="bi bi-journal-text me-2" style="color:var(--accent);"></i>Semester Subjects</h5>
+          <div class="d-flex gap-2">
+            <button class="btn-secondary-custom" onclick="addSemester()"><i class="bi bi-plus me-1"></i>New Sem</button>
+            <button class="btn-primary-custom" onclick="calculateGPA()"><i class="bi bi-calculator me-1"></i>Calculate</button>
+          </div>
+        </div>
+        <div class="sem-tabs" id="semTabs"></div>
+        <div class="subject-table">
+          <div class="col-labels">
+            <span>Subject Name</span><span>Credits</span><span>Grade</span><span>Points</span><span></span>
+          </div>
+          <div id="subjectRows"></div>
+          <button class="btn-add-row" onclick="addRow()">
+            <i class="bi bi-plus-circle"></i> Add Subject
+          </button>
+        </div>
+        <div class="actions-row">
+          <button class="btn-primary-custom" onclick="calculateGPA()"><i class="bi bi-calculator me-1"></i>Calculate GPA</button>
+          <button class="btn-secondary-custom" onclick="clearRows()"><i class="bi bi-trash me-1"></i>Clear Semester</button>
+        </div>
+      </div>
+
+      <!-- GRADE SCALE -->
+      <div class="scale-card">
+        <div class="card-header-custom">
+          <h5><i class="bi bi-table me-2" style="color:var(--accent2);"></i>Grade Scale Reference</h5>
+        </div>
+        <div class="scale-grid">
+          <div class="scale-item"><div class="scale-letter" style="color:#22c55e;">O</div><div class="scale-range">91–100</div><div class="scale-points" style="color:#22c55e;">10.0</div></div>
+          <div class="scale-item"><div class="scale-letter" style="color:#4ade80;">A+</div><div class="scale-range">81–90</div><div class="scale-points" style="color:#4ade80;">9.0</div></div>
+          <div class="scale-item"><div class="scale-letter" style="color:#6366f1;">A</div><div class="scale-range">71–80</div><div class="scale-points" style="color:#6366f1;">8.0</div></div>
+          <div class="scale-item"><div class="scale-letter" style="color:#818cf8;">B+</div><div class="scale-range">61–70</div><div class="scale-points" style="color:#818cf8;">7.0</div></div>
+          <div class="scale-item"><div class="scale-letter" style="color:#22d3ee;">B</div><div class="scale-range">51–60</div><div class="scale-points" style="color:#22d3ee;">6.0</div></div>
+          <div class="scale-item"><div class="scale-letter" style="color:#eab308;">C</div><div class="scale-range">45–50</div><div class="scale-points" style="color:#eab308;">5.0</div></div>
+          <div class="scale-item"><div class="scale-letter" style="color:#f97316;">P</div><div class="scale-range">40–44</div><div class="scale-points" style="color:#f97316;">4.0</div></div>
+          <div class="scale-item"><div class="scale-letter" style="color:#ef4444;">F</div><div class="scale-range">0–39</div><div class="scale-points" style="color:#ef4444;">0.0</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-lg-4">
+      <div class="gpa-card mb-4">
+        <div class="gpa-label">Semester GPA</div>
+        <div class="arc-wrap">
+          <svg viewBox="0 0 160 90">
+            <defs>
+              <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#6366f1"/>
+                <stop offset="100%" style="stop-color:#22d3ee"/>
+              </linearGradient>
+            </defs>
+            <path class="arc-bg" d="M 15 85 A 65 65 0 0 1 145 85"/>
+            <path class="arc-fill" id="arcPath" d="M 15 85 A 65 65 0 0 1 145 85" stroke-dasharray="0 204"/>
+          </svg>
+        </div>
+        <div class="gpa-value" id="gpaDisplay">—</div>
+        <div><span class="gpa-grade grade-NA" id="gpaGrade">No Data</span></div>
+        <div class="stats-row">
+          <div class="stat-pill"><div class="num" id="totalCredits">0</div><div class="lbl">Credits</div></div>
+          <div class="stat-pill"><div class="num" id="subjectCount">0</div><div class="lbl">Subjects</div></div>
+          <div class="stat-pill"><div class="num" id="gradePoints">0</div><div class="lbl">Points</div></div>
+        </div>
+      </div>
+
+      <div class="history-card">
+        <div class="card-header-custom">
+          <h5><i class="bi bi-clock-history me-2" style="color:var(--accent2);"></i>Semester History</h5>
+          <button class="btn-secondary-custom" style="font-size:0.75rem;padding:0.3rem 0.7rem;" onclick="clearHistory()">Clear</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <div style="color:var(--muted);font-size:0.88rem;text-align:center;padding:2rem 0;">
+            <i class="bi bi-bar-chart-line" style="font-size:1.8rem;display:block;margin-bottom:0.5rem;opacity:0.4;"></i>
+            No semesters saved yet
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let semesters = [];
+let currentSem = 0;
+const GRADE_MAP = { 'O':10,'A+':9,'A':8,'B+':7,'B':6,'C':5,'P':4,'F':0 };
+const GRADES = ['O','A+','A','B+','B','C','P','F'];
+
+function gradeColor(g) {
+  const map = {'O':'#22c55e','A+':'#4ade80','A':'#6366f1','B+':'#818cf8','B':'#22d3ee','C':'#eab308','P':'#f97316','F':'#ef4444'};
+  return map[g] || '#6b6b8a';
+}
+
+function init() {
+  const saved = localStorage.getItem('gradeforge');
+  if (saved) { const d = JSON.parse(saved); semesters = d.semesters||[]; currentSem = d.currentSem||0; }
+  if (semesters.length === 0) addSemester(true);
+  else { renderTabs(); renderRows(); updateHistory(); updateCGPA(); }
+}
+
+function save() {
+  localStorage.setItem('gradeforge', JSON.stringify({ semesters, currentSem }));
+}
+
+function addSemester(silent=false) {
+  semesters.push({ name:`Semester ${semesters.length+1}`, rows:[emptyRow()], gpa:null, credits:0 });
+  currentSem = semesters.length - 1;
+  renderTabs(); renderRows();
+  if (!silent) showToast(`Semester ${semesters.length} added`);
+  save();
+}
+
+function switchSem(idx) { currentSem = idx; renderTabs(); renderRows(); }
+function emptyRow() { return { name:'', credits:'', grade:'A', points:8 }; }
+
+function renderTabs() {
+  document.getElementById('semTabs').innerHTML = semesters.map((s,i) =>
+    `<button class="sem-tab ${i===currentSem?'active':''}" onclick="switchSem(${i})">${s.name}</button>`
+  ).join('');
+  document.getElementById('semCount').textContent = semesters.length;
+}
+
+function renderRows() {
+  const sem = semesters[currentSem];
+  document.getElementById('subjectRows').innerHTML = sem.rows.map((r,i) => `
+    <div class="subject-row">
+      <input class="inp" type="text" placeholder="e.g. Mathematics" value="${r.name}" oninput="updateRow(${i},'name',this.value)">
+      <input class="inp" type="number" placeholder="3" min="1" max="6" value="${r.credits}" oninput="updateRow(${i},'credits',this.value)">
+      <select class="inp" onchange="updateRow(${i},'grade',this.value)">
+        ${GRADES.map(g=>`<option value="${g}" ${r.grade===g?'selected':''}>${g} (${GRADE_MAP[g]})</option>`).join('')}
+      </select>
+      <div class="grade-badge-sm" id="badge-${i}"
+        style="background:${gradeColor(r.grade)}22;color:${gradeColor(r.grade)};border:1px solid ${gradeColor(r.grade)}44;">
+        ${GRADE_MAP[r.grade]||0}
+      </div>
+      <button class="btn-del" onclick="deleteRow(${i})"><i class="bi bi-x"></i></button>
+    </div>
+  `).join('');
+}
+
+function addRow() { semesters[currentSem].rows.push(emptyRow()); renderRows(); save(); }
+
+function deleteRow(i) {
+  if (semesters[currentSem].rows.length === 1) { showToast('Keep at least one subject'); return; }
+  semesters[currentSem].rows.splice(i,1); renderRows(); save();
+}
+
+function updateRow(i, field, val) {
+  semesters[currentSem].rows[i][field] = val;
+  if (field === 'grade') {
+    semesters[currentSem].rows[i].points = GRADE_MAP[val]||0;
+    const badge = document.getElementById(`badge-${i}`);
+    const color = gradeColor(val);
+    badge.style.background = color+'22'; badge.style.color = color;
+    badge.style.borderColor = color+'44'; badge.textContent = GRADE_MAP[val];
+  }
+  save();
+}
+
+function clearRows() {
+  semesters[currentSem].rows = [emptyRow()]; semesters[currentSem].gpa = null;
+  renderRows(); resetMeter(); save();
+}
+
+function calculateGPA() {
+  const rows = semesters[currentSem].rows;
+  let totalCredits=0, totalPoints=0, valid=0;
+  rows.forEach(r => {
+    const cr = parseFloat(r.credits), pt = GRADE_MAP[r.grade]??0;
+    if (!isNaN(cr) && cr>0) { totalCredits+=cr; totalPoints+=cr*pt; valid++; }
+  });
+  if (valid===0) { showToast('Add subjects with valid credits!'); return; }
+
+  const gpa = totalPoints/totalCredits;
+  semesters[currentSem].gpa = parseFloat(gpa.toFixed(2));
+  semesters[currentSem].credits = totalCredits;
+
+  document.getElementById('gpaDisplay').textContent = gpa.toFixed(2);
+  document.getElementById('totalCredits').textContent = totalCredits;
+  document.getElementById('subjectCount').textContent = valid;
+  document.getElementById('gradePoints').textContent = totalPoints.toFixed(1);
+
+  const fill = Math.round((gpa/10)*204);
+  document.getElementById('arcPath').setAttribute('stroke-dasharray',`${fill} ${204-fill}`);
+
+  const gradeEl = document.getElementById('gpaGrade');
+  let letter, cls;
+  if (gpa>=9.5)      { letter='O';  cls='grade-A'; }
+  else if (gpa>=8.5) { letter='A+'; cls='grade-A'; }
+  else if (gpa>=7.5) { letter='A';  cls='grade-B'; }
+  else if (gpa>=6.5) { letter='B+'; cls='grade-B'; }
+  else if (gpa>=5.5) { letter='B';  cls='grade-B'; }
+  else if (gpa>=4.5) { letter='C';  cls='grade-C'; }
+  else if (gpa>=3.5) { letter='P';  cls='grade-D'; }
+  else               { letter='F';  cls='grade-F'; }
+  gradeEl.className=`gpa-grade ${cls}`; gradeEl.textContent=letter;
+
+  updateHistory(); updateCGPA(); save();
+  showToast(`GPA Calculated: ${gpa.toFixed(2)}`);
+}
+
+function resetMeter() {
+  document.getElementById('gpaDisplay').textContent='—';
+  document.getElementById('gpaGrade').className='gpa-grade grade-NA';
+  document.getElementById('gpaGrade').textContent='No Data';
+  document.getElementById('arcPath').setAttribute('stroke-dasharray','0 204');
+  document.getElementById('totalCredits').textContent='0';
+  document.getElementById('subjectCount').textContent='0';
+  document.getElementById('gradePoints').textContent='0';
+}
+
+function updateHistory() {
+  const el = document.getElementById('historyList');
+  const done = semesters.filter(s=>s.gpa!==null);
+  if (!done.length) { el.innerHTML=`<div style="color:var(--muted);text-align:center;padding:2rem 0;"><i class="bi bi-bar-chart-line" style="font-size:1.8rem;display:block;opacity:0.4;margin-bottom:0.5rem;"></i>No semesters saved yet</div>`; return; }
+  el.innerHTML = done.map(s => {
+    const barW = Math.round((s.gpa/10)*100);
+    return `<div class="history-item">
+      <div><div class="history-sem">${s.name}</div><div class="history-credits">${s.credits} credits</div>
+      <div class="history-bar-wrap mt-1"><div class="history-bar" style="width:${barW}%"></div></div></div>
+      <div><div class="history-gpa">${s.gpa.toFixed(2)}</div></div></div>`;
+  }).join('');
+}
+
+function clearHistory() {
+  semesters.forEach(s=>{s.gpa=null;s.credits=0;});
+  updateHistory(); updateCGPA(); resetMeter(); save(); showToast('History cleared');
+}
+
+function updateCGPA() {
+  const done = semesters.filter(s=>s.gpa!==null&&s.credits>0);
+  if (!done.length) { document.getElementById('cgpaVal').textContent='—'; document.getElementById('cgpaCredits').textContent='Add subjects to calculate'; return; }
+  let tw=0,tgp=0;
+  done.forEach(s=>{tw+=s.credits;tgp+=s.gpa*s.credits;});
+  document.getElementById('cgpaVal').textContent=(tgp/tw).toFixed(2);
+  document.getElementById('cgpaCredits').textContent=`${tw} total credits across ${done.length} semester(s)`;
+}
+
+function resetAll() {
+  if (!confirm('Reset all data? This cannot be undone.')) return;
+  semesters=[]; localStorage.removeItem('gradeforge'); init(); showToast('All data reset');
+}
+
+function exportSummary() {
+  const done = semesters.filter(s=>s.gpa!==null);
+  if (!done.length) { showToast('Calculate GPA first!'); return; }
+  let txt='GradeForge — GPA Summary\n'+'='.repeat(32)+'\n\n';
+  done.forEach(s=>{
+    txt+=`${s.name}\n  GPA: ${s.gpa.toFixed(2)}   Credits: ${s.credits}\n`;
+    s.rows.forEach(r=>{ if(r.credits) txt+=`  - ${r.name||'Subject'}: ${r.grade} (${r.credits} cr)\n`; });
+    txt+='\n';
+  });
+  const tw=done.reduce((a,s)=>a+s.credits,0), tgp=done.reduce((a,s)=>a+s.gpa*s.credits,0);
+  txt+=`CGPA: ${(tgp/tw).toFixed(2)}\n`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));
+  a.download='GradeForge-Summary.txt'; a.click();
+  showToast('Summary exported!');
+}
+
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+init();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
